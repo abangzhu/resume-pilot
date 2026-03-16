@@ -1,0 +1,403 @@
+/* ==============================================
+   Shadow DOM styles for Resume Pilot components
+   Merged from all Vue SFC <style scoped> blocks.
+   Injected into Shadow DOM at runtime via ?inline.
+   ============================================== */
+
+/* --- FloatingPanel --- */
+.rp-panel {
+  width: 340px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  user-select: none;
+}
+
+.rp-panel.rp-dragging {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.rp-panel.rp-collapsed {
+  width: auto;
+}
+
+.rp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  cursor: grab;
+}
+
+.rp-header:active {
+  cursor: grabbing;
+}
+
+.rp-title {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+.rp-toggle {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rp-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.rp-body {
+  padding: 12px;
+}
+
+/* --- IdleState --- */
+.rp-idle {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.rp-idle-text {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 10px;
+}
+
+.rp-idle-waiting {
+  color: #9ca3af;
+  margin-bottom: 0;
+}
+
+.rp-score-btn {
+  width: 100%;
+  padding: 8px 16px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rp-score-btn:hover {
+  background: #4f46e5;
+}
+
+/* --- LoadingState --- */
+.rp-loading {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.rp-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: rp-spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes rp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.rp-loading-text {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.rp-loading-time {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* --- ScoredState --- */
+.rp-scored {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.rp-candidate-info {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.rp-candidate-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  margin-right: 6px;
+}
+
+.rp-candidate-id {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.rp-resume-text-trigger {
+  position: relative;
+  font-size: 11px;
+  color: #6366f1;
+  cursor: help;
+  border-bottom: 1px dashed #6366f1;
+  margin-left: 6px;
+}
+
+.rp-resume-text-trigger::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #1f2937;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  max-width: 260px;
+  width: max-content;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.rp-resume-text-trigger:hover::after {
+  opacity: 1;
+}
+
+.rp-overall {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 12px;
+}
+
+.rp-overall-score {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rp-overall-rec {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rp-dims {
+  margin-bottom: 12px;
+}
+
+.rp-summary {
+  padding: 8px 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.rp-summary-text {
+  font-size: 12px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.rp-section {
+  margin-bottom: 10px;
+}
+
+.rp-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.rp-highlight-title {
+  color: #16a34a;
+}
+
+.rp-concern-title {
+  color: #dc2626;
+}
+
+.rp-list {
+  list-style: none;
+  padding: 0;
+}
+
+.rp-list li {
+  font-size: 12px;
+  color: #4b5563;
+  padding: 2px 0 2px 12px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.rp-list li::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+}
+
+.rp-rescore-btn {
+  width: 100%;
+  padding: 7px;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+
+.rp-rescore-btn:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+/* --- ErrorState --- */
+.rp-error {
+  text-align: center;
+  padding: 12px 0;
+}
+
+.rp-error-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #ef4444;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+}
+
+.rp-error-msg {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.rp-retry-btn {
+  padding: 7px 20px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rp-retry-btn:hover {
+  background: #4f46e5;
+}
+
+/* --- TemplatePicker --- */
+.rp-picker {
+  margin-bottom: 10px;
+}
+
+.rp-select {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+}
+
+.rp-select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+/* --- DimensionRow --- */
+.rp-dim {
+  margin-bottom: 10px;
+}
+
+.rp-dim:last-child {
+  margin-bottom: 0;
+}
+
+.rp-dim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.rp-dim-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.rp-dim-meta {
+  font-size: 12px;
+}
+
+.rp-dim-score {
+  font-weight: 600;
+}
+
+.rp-dim-weight {
+  color: #9ca3af;
+  margin-left: 2px;
+}
+
+.rp-dim-bar-bg {
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rp-dim-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.rp-dim-comment {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 3px;
+  line-height: 1.4;
+}

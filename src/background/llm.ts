@@ -140,6 +140,7 @@ export function parseScoreResponse(
   raw: string,
   candidateId: string,
   templateId: string,
+  candidateName?: string,
 ): ScoreResult {
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
@@ -150,6 +151,7 @@ export function parseScoreResponse(
 
   return {
     candidateId,
+    candidateName,
     templateId,
     scoredAt: now(),
     recommendation: parsed.recommendation ?? 'hold',
@@ -171,7 +173,7 @@ export async function scoreResume(
     : buildPrompt(template, request.text)
 
   const raw = await callLlm(settings, messages)
-  return parseScoreResponse(raw, request.candidateId, template.id)
+  return parseScoreResponse(raw, request.candidateId, template.id, request.candidateName)
 }
 
 export async function testApiConnection(settings: ApiSettings): Promise<{ ok: boolean; message: string }> {
