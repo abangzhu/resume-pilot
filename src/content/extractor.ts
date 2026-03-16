@@ -1,3 +1,5 @@
+import { sendMessage } from '@/shared/messaging'
+
 interface ResumeData {
   candidateId: string
   candidateName: string
@@ -108,6 +110,122 @@ export function observeResumePanel(callback: (visible: boolean) => void): Mutati
   })
 
   return observer
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function findScrollableAncestor(el: Element): Element | null {
+  let current = el.parentElement
+  while (current) {
+    const style = getComputedStyle(current)
+    const overflowY = style.overflowY
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll') &&
+      current.scrollHeight > current.clientHeight
+    ) {
+      return current
+    }
+    current = current.parentElement
+  }
+  return null
+}
+
+const SCROLL_SETTLE_MS = 150
+const OVERLAP_PX = 20
+
+export interface ScrollCaptureResult {
+  screenshot: string
+  text: string
+}
+
+export async function scrollCaptureResume(): Promise<ScrollCaptureResult | null> {
+  const panel = findElement(SELECTORS.resumePanel)
+  if (!panel) return null
+
+  const scroller = findScrollableAncestor(panel)
+  if (!scroller) return null
+  if (scroller.scrollHeight <= scroller.clientHeight) return null
+
+  const originalScrollTop = scroller.scrollTop
+  const scrollHeight = scroller.scrollHeight
+  const clientHeight = scroller.clientHeight
+  const dpr = window.devicePixelRatio || 1
+
+  const strips: string[] = []
+  const seenLines = new Set<string>()
+  const textParts: string[] = []
+  let offset = 0
+
+  try {
+    while (offset < scrollHeight) {
+      scroller.scrollTop = offset
+      await delay(SCROLL_SETTLE_MS)
+
+      const rect = getResumePanelRect()
+      if (!rect) break
+
+      const remaining = scrollHeight - offset
+      if (remaining < clientHeight) {
+        const visiblePortion = remaining
+        rect.height = Math.round(visiblePortion * dpr)
+      }
+
+      const captureRes = await sendMessage<
+        { rect: typeof rect },
+        { screenshot: string }
+      >('CAPTURE_SCREENSHOT', { rect })
+
+      if (!captureRes.success || !captureRes.data) break
+
+      strips.push(captureRes.data.screenshot)
+
+      const panelText = (panel as HTMLElement).innerText ?? ''
+      for (const line of panelText.split('\n')) {
+        const trimmed = line.trim()
+        if (trimmed && !seenLines.has(trimmed)) {
+          seenLines.add(trimmed)
+          textParts.push(trimmed)
+        }
+      }
+
+      offset += clientHeight - OVERLAP_PX
+    }
+  } finally {
+    scroller.scrollTop = originalScrollTop
+  }
+
+  const collectedText = textParts.join('\n')
+
+  if (strips.length <= 1) {
+    return collectedText ? { screenshot: '', text: collectedText } : null
+  }
+
+  const stripHeight = Math.round(clientHeight * dpr)
+  const panelWidth = Math.round(
+    (findElement(SELECTORS.resumePanel)?.getBoundingClientRect().width ?? 0) * dpr,
+  )
+  const totalHeight =
+    stripHeight * strips.length - Math.round(OVERLAP_PX * dpr) * (strips.length - 1)
+
+  const stitchRes = await sendMessage<
+    { strips: string[]; stripHeight: number; panelWidth: number; totalHeight: number; overlap: number },
+    { screenshot: string }
+  >('STITCH_SCREENSHOTS', {
+    strips,
+    stripHeight,
+    panelWidth,
+    totalHeight,
+    overlap: Math.round(OVERLAP_PX * dpr),
+  })
+
+  if (!stitchRes.success || !stitchRes.data) return null
+
+  return {
+    screenshot: stitchRes.data.screenshot,
+    text: collectedText,
+  }
 }
 
 export function extractResumeData(): ResumeData | null {
