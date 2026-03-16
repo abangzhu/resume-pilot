@@ -47,6 +47,13 @@ export interface CachedScore {
   expiresAt: number
 }
 
+export interface CachedResume {
+  text: string
+  screenshot: string
+  extractedAt: number
+  expiresAt: number
+}
+
 export interface FieldConfig {
   enabledFields: string[]
   customFields: string[]
@@ -69,6 +76,9 @@ export type MessageType =
   | 'DELETE_TEMPLATE'
   | 'TEST_CONNECTION'
   | 'GET_CACHED_SCORE'
+  | 'GET_ANY_CACHED_SCORE'
+  | 'GET_CACHED_RESUME'
+  | 'SAVE_CACHED_RESUME'
   | 'CLEAR_CACHE'
   | 'STITCH_SCREENSHOTS'
 

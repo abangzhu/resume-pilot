@@ -75,6 +75,7 @@ export const STORAGE_KEYS = {
   FIELD_CONFIG: 'fieldConfig',
   ADVANCED_SETTINGS: 'advancedSettings',
   SCORE_CACHE: 'scoreCache',
+  RESUME_CACHE: 'resumeCache',
 } as const
 
 export const LLM_RESPONSE_FORMAT = `请严格按以下 JSON 格式返回结果，不要包含其他内容：

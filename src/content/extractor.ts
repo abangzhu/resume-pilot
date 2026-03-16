@@ -8,22 +8,30 @@ interface ResumeData {
 }
 
 const SELECTORS = {
-  resumePanel: [
+  resumeButton: ['.resume-btn-online'],
+
+  // Bare selectors — for searching inside iframes
+  resumeContentBare: [
+    '.iframe-resume-detail',
     '.resume-detail',
+    '.resume-content-wrap',
     '.resume-content',
-    '[class*="resume"]',
+  ],
+
+  // Dialog-scoped — for searching main DOM (content directly in dialog, not in iframe)
+  resumeContentScoped: [
+    '.resume-common-dialog .iframe-resume-detail',
+    '.resume-common-dialog .resume-detail',
+    '.resume-common-dialog .resume-content-wrap',
+    '.resume-common-dialog .resume-content',
     '.dialog-container .detail-figure',
   ],
-  resumeTextFallback: [
-    '.base-info-single-container',
-    '.base-info-content',
-  ],
+
   candidateName: [
     '.name-box',
     '.geek-item.selected .geek-name',
     '.resume-detail .name',
     '.detail-figure .name',
-    '[class*="resume"] .name',
   ],
   candidateId: null,
 } as const
@@ -36,28 +44,112 @@ function findElement(selectors: readonly string[]): Element | null {
   return null
 }
 
+export function detectResumeButton(): boolean {
+  return findElement(SELECTORS.resumeButton) !== null
+}
+
 export function detectResumePanel(): boolean {
-  return findElement(SELECTORS.resumePanel) !== null
+  const dialog = document.querySelector('.resume-common-dialog')
+  if (dialog) {
+    const style = getComputedStyle(dialog)
+    if (style.display !== 'none' && style.visibility !== 'hidden') return true
+  }
+  const legacy = document.querySelector('.dialog-container .detail-figure')
+  if (legacy) return true
+  return false
+}
+
+function isGarbageText(text: string): boolean {
+  if (/^\s*!?function\s*\(/.test(text)) return true
+  if (/\bSystem\.import\b/.test(text)) return true
+  if (/\bcreateElement\s*\(\s*["']script["']\s*\)/.test(text)) return true
+  return false
 }
 
 export function extractResumeText(): string {
-  for (const sel of SELECTORS.resumePanel) {
+  // 1. Main DOM: dialog-scoped selectors (content directly in dialog)
+  for (const sel of SELECTORS.resumeContentScoped) {
     const el = document.querySelector(sel)
     const text = (el?.textContent ?? '').replace(/\s+/g, ' ').trim()
-    if (text.length > 10) return text
+    if (text.length > 10 && !isGarbageText(text)) return text
   }
 
-  for (const sel of SELECTORS.resumeTextFallback) {
-    const el = document.querySelector(sel)
-    const text = (el?.textContent ?? '').replace(/\s+/g, ' ').trim()
-    if (text.length > 10) return text
+  // 2. Iframes inside dialog: bare selectors (no .resume-common-dialog prefix)
+  const dialog = document.querySelector('.resume-common-dialog')
+  const iframes = dialog
+    ? dialog.querySelectorAll('iframe')
+    : document.querySelectorAll('iframe')
+  for (const iframe of iframes) {
+    try {
+      const iframeDoc = iframe.contentDocument
+      if (!iframeDoc) continue
+      for (const sel of SELECTORS.resumeContentBare) {
+        const el = iframeDoc.querySelector(sel)
+        const text = (el?.textContent ?? '').replace(/\s+/g, ' ').trim()
+        if (text.length > 10 && !isGarbageText(text)) return text
+      }
+      const bodyText = (iframeDoc.body?.innerText ?? '').replace(/\s+/g, ' ').trim()
+      if (bodyText.length > 50 && !isGarbageText(bodyText)) return bodyText
+    } catch {
+      // Cross-origin iframe — screenshot will be the fallback
+    }
+  }
+
+  // 3. Fallback: dialog innerText (when content selectors don't match)
+  if (dialog) {
+    const dialogText = (dialog as HTMLElement).innerText ?? ''
+    const cleaned = dialogText.replace(/\s+/g, ' ').trim()
+    if (cleaned.length > 50 && !isGarbageText(cleaned)) return cleaned
   }
 
   return ''
 }
 
+function findResumePanel(): Element | null {
+  // 1. Main DOM: scoped selectors
+  for (const sel of SELECTORS.resumeContentScoped) {
+    const el = document.querySelector(sel)
+    if (el) return el
+  }
+
+  // 2. Same-origin iframes in dialog: bare selectors
+  const dialog = document.querySelector('.resume-common-dialog')
+  const iframes = dialog
+    ? dialog.querySelectorAll('iframe')
+    : document.querySelectorAll('iframe')
+  for (const iframe of iframes) {
+    try {
+      const iframeDoc = iframe.contentDocument
+      if (!iframeDoc) continue
+      for (const sel of SELECTORS.resumeContentBare) {
+        const el = iframeDoc.querySelector(sel)
+        if (el) return el
+      }
+    } catch {
+      // Cross-origin — skip
+    }
+  }
+
+  // 3. Cross-origin iframe fallback: use iframe element itself for rect
+  if (dialog) {
+    const dialogIframes = dialog.querySelectorAll('iframe')
+    for (const iframe of dialogIframes) {
+      const rect = iframe.getBoundingClientRect()
+      if (rect.width > 100 && rect.height > 100) return iframe
+    }
+  }
+
+  // 4. Ultimate fallback: dialog element itself
+  if (dialog) {
+    const rect = dialog.getBoundingClientRect()
+    if (rect.width > 100 && rect.height > 100) return dialog
+  }
+
+  return null
+}
+
 export function getResumePanelRect(): { x: number; y: number; width: number; height: number } | null {
-  const panel = findElement(SELECTORS.resumePanel)
+  const panel = findResumePanel()
   if (!panel) return null
 
   const rect = panel.getBoundingClientRect()
@@ -97,9 +189,19 @@ export function getCandidateName(): string {
   return el?.textContent?.trim() ?? ''
 }
 
-export function observeResumePanel(callback: (visible: boolean) => void): MutationObserver {
+export interface ResumeDetectionState {
+  buttonVisible: boolean
+  panelOpen: boolean
+}
+
+export function observeResumeState(
+  callback: (state: ResumeDetectionState) => void,
+): MutationObserver {
   const observer = new MutationObserver(() => {
-    callback(detectResumePanel())
+    callback({
+      buttonVisible: detectResumeButton(),
+      panelOpen: detectResumePanel(),
+    })
   })
 
   observer.observe(document.body, {
@@ -141,12 +243,23 @@ export interface ScrollCaptureResult {
 }
 
 export async function scrollCaptureResume(): Promise<ScrollCaptureResult | null> {
-  const panel = findElement(SELECTORS.resumePanel)
+  const panel = findResumePanel()
   if (!panel) return null
 
   const scroller = findScrollableAncestor(panel)
-  if (!scroller) return null
-  if (scroller.scrollHeight <= scroller.clientHeight) return null
+  if (!scroller || scroller.scrollHeight <= scroller.clientHeight) {
+    const rect = getResumePanelRect()
+    if (!rect) return null
+    const captureRes = await sendMessage<{ rect: typeof rect }, { screenshot: string }>(
+      'CAPTURE_SCREENSHOT', { rect },
+    )
+    const panelText = (panel as HTMLElement).innerText ?? ''
+    const text = isGarbageText(panelText) ? '' : panelText.replace(/\s+/g, ' ').trim()
+    if (captureRes.success && captureRes.data) {
+      return { screenshot: captureRes.data.screenshot, text }
+    }
+    return text ? { screenshot: '', text } : null
+  }
 
   const originalScrollTop = scroller.scrollTop
   const scrollHeight = scroller.scrollHeight
@@ -196,15 +309,20 @@ export async function scrollCaptureResume(): Promise<ScrollCaptureResult | null>
     scroller.scrollTop = originalScrollTop
   }
 
-  const collectedText = textParts.join('\n')
+  const rawText = textParts.join('\n')
+  const collectedText = isGarbageText(rawText) ? '' : rawText
 
-  if (strips.length <= 1) {
+  if (strips.length === 0) {
     return collectedText ? { screenshot: '', text: collectedText } : null
+  }
+
+  if (strips.length === 1) {
+    return { screenshot: strips[0], text: collectedText }
   }
 
   const stripHeight = Math.round(clientHeight * dpr)
   const panelWidth = Math.round(
-    (findElement(SELECTORS.resumePanel)?.getBoundingClientRect().width ?? 0) * dpr,
+    (panel?.getBoundingClientRect().width ?? 0) * dpr,
   )
   const totalHeight =
     stripHeight * strips.length - Math.round(OVERLAP_PX * dpr) * (strips.length - 1)

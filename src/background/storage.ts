@@ -102,7 +102,7 @@ export async function deleteTemplate(id: string): Promise<MessageResponse> {
 
 export async function clearCache(): Promise<MessageResponse> {
   try {
-    await chrome.storage.local.remove(STORAGE_KEYS.SCORE_CACHE)
+    await chrome.storage.local.remove([STORAGE_KEYS.SCORE_CACHE, STORAGE_KEYS.RESUME_CACHE])
     return { success: true }
   } catch (error) {
     return { success: false, error: String(error) }

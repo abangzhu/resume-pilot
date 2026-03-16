@@ -21,6 +21,7 @@ const truncatedText = computed(() => {
 
 defineEmits<{
   rescore: []
+  reExtract: []
 }>()
 
 const recLabel = computed(() => getRecommendationLabel(props.result.recommendation))
@@ -49,6 +50,7 @@ const dimensionList = computed(() =>
       >
         {{ showFullResume ? '收起原文' : '简历原文' }}
       </span>
+      <span class="rp-reextract-link" @click="$emit('reExtract')">重新解析</span>
     </div>
 
     <!-- Resume Detail -->
