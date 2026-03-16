@@ -22,6 +22,13 @@ function toggle(): void {
 function onMouseDown(e: MouseEvent): void {
   if ((e.target as HTMLElement).closest('.no-drag')) return
   dragging.value = true
+
+  // 用实际渲染位置初始化 pos（解决 bottom/right → left/top 坐标系切换）
+  if (!pos.value.x && !pos.value.y && panelRef.value) {
+    const rect = panelRef.value.getBoundingClientRect()
+    pos.value = { x: rect.left, y: rect.top }
+  }
+
   offset.value = {
     x: e.clientX - pos.value.x,
     y: e.clientY - pos.value.y,
