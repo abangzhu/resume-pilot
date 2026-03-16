@@ -8,6 +8,7 @@ import type {
   CaptureRequest,
   StitchRequest,
   CachedScore,
+  CachedResume,
 } from '@/shared/types'
 import { STORAGE_KEYS } from '@/shared/constants'
 import {
@@ -146,6 +147,82 @@ onMessage(async (message: Message, sender): Promise<MessageResponse> => {
         }
 
         return { success: true, data: null }
+      } catch (error) {
+        return { success: false, error: String(error) }
+      }
+    }
+
+    case 'GET_ANY_CACHED_SCORE': {
+      try {
+        const { candidateId } = payload as { candidateId: string }
+        const cacheRes = await chrome.storage.local.get(STORAGE_KEYS.SCORE_CACHE)
+        const cache: Record<string, CachedScore> = cacheRes[STORAGE_KEYS.SCORE_CACHE] ?? {}
+        const currentTime = now()
+
+        for (const [key, entry] of Object.entries(cache)) {
+          if (key.startsWith(`${candidateId}_`) && entry.expiresAt > currentTime) {
+            return { success: true, data: entry.result }
+          }
+        }
+
+        return { success: true, data: null }
+      } catch (error) {
+        return { success: false, error: String(error) }
+      }
+    }
+
+    case 'GET_CACHED_RESUME': {
+      try {
+        const { candidateId } = payload as { candidateId: string }
+        const cacheRes = await chrome.storage.local.get(STORAGE_KEYS.RESUME_CACHE)
+        const cache: Record<string, CachedResume> = cacheRes[STORAGE_KEYS.RESUME_CACHE] ?? {}
+        const entry = cache[candidateId]
+
+        if (entry && entry.expiresAt > now()) {
+          return { success: true, data: entry }
+        }
+
+        return { success: true, data: null }
+      } catch (error) {
+        return { success: false, error: String(error) }
+      }
+    }
+
+    case 'SAVE_CACHED_RESUME': {
+      try {
+        const { candidateId, text, screenshot } = payload as {
+          candidateId: string
+          text: string
+          screenshot: string
+        }
+        const advRes = await getSettings(STORAGE_KEYS.ADVANCED_SETTINGS)
+        const ttl = (advRes.data as { cacheTtlMinutes?: number } | null)?.cacheTtlMinutes ?? 1440
+
+        if (ttl > 0) {
+          const cacheRes = await chrome.storage.local.get(STORAGE_KEYS.RESUME_CACHE)
+          const cache: Record<string, CachedResume> = cacheRes[STORAGE_KEYS.RESUME_CACHE] ?? {}
+
+          const MAX_ENTRIES = 20
+          const entries = Object.entries(cache)
+          let evicted: Record<string, CachedResume> = cache
+          if (entries.length >= MAX_ENTRIES) {
+            const sorted = entries.sort(([, a], [, b]) => a.extractedAt - b.extractedAt)
+            evicted = Object.fromEntries(sorted.slice(entries.length - MAX_ENTRIES + 1))
+          }
+
+          const updated = {
+            ...evicted,
+            [candidateId]: {
+              text,
+              screenshot,
+              extractedAt: now(),
+              expiresAt: now() + ttl * 60 * 1000,
+            },
+          }
+          await chrome.storage.local.set({ [STORAGE_KEYS.RESUME_CACHE]: updated })
+        }
+
+        return { success: true }
       } catch (error) {
         return { success: false, error: String(error) }
       }
