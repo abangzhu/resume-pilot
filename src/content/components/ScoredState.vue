@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { ScoreResult } from '@/shared/types'
 import { getRecommendationLabel, getRecommendationColor, getScoreColor } from '@/shared/utils'
 import DimensionRow from './DimensionRow.vue'
@@ -7,7 +7,10 @@ import DimensionRow from './DimensionRow.vue'
 const props = defineProps<{
   result: ScoreResult
   resumeText: string
+  resumeScreenshot: string
 }>()
+
+const showFullResume = ref(false)
 
 const truncatedText = computed(() => {
   if (!props.resumeText) return ''
@@ -38,9 +41,29 @@ const dimensionList = computed(() =>
     <div v-if="result.candidateName || result.candidateId" class="rp-candidate-info">
       <span v-if="result.candidateName" class="rp-candidate-name">{{ result.candidateName }}</span>
       <span class="rp-candidate-id">{{ result.candidateId }}</span>
-      <span v-if="resumeText" class="rp-resume-text-trigger" :data-tooltip="truncatedText">
-        简历原文
+      <span
+        v-if="resumeText"
+        class="rp-resume-text-trigger"
+        :data-tooltip="truncatedText"
+        @click="showFullResume = !showFullResume"
+      >
+        {{ showFullResume ? '收起原文' : '简历原文' }}
       </span>
+    </div>
+
+    <!-- Resume Detail -->
+    <div v-if="showFullResume" class="rp-resume-detail">
+      <div class="rp-resume-detail-header">
+        <span class="rp-resume-detail-title">提交给模型的简历内容</span>
+        <button class="rp-resume-close-btn" @click="showFullResume = false">✕</button>
+      </div>
+      <img
+        v-if="resumeScreenshot"
+        :src="resumeScreenshot"
+        class="rp-resume-detail-img"
+        alt="简历截图"
+      />
+      <pre class="rp-resume-detail-text">{{ resumeText }}</pre>
     </div>
 
     <!-- Overall -->
