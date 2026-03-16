@@ -9,6 +9,7 @@ import {
   getCandidateId,
   getCandidateName,
   observeResumePanel,
+  scrollCaptureResume,
 } from './extractor'
 import FloatingPanel from './components/FloatingPanel.vue'
 import IdleState from './components/IdleState.vue'
@@ -85,13 +86,19 @@ async function startScoring(): Promise<void> {
   errorMessage.value = ''
 
   try {
-    const text = extractResumeText()
-    lastResumeText.value = text
+    let text = extractResumeText()
     const rect = getResumePanelRect()
     const candidateId = getCandidateId()
 
     let screenshot = ''
-    if (rect) {
+    const scrollResult = await scrollCaptureResume()
+    if (scrollResult) {
+      screenshot = scrollResult.screenshot
+      if (scrollResult.text) {
+        text = scrollResult.text
+      }
+    }
+    if (!screenshot && rect) {
       const captureRes = await sendMessage<
         { rect: typeof rect },
         { screenshot: string }
@@ -100,6 +107,7 @@ async function startScoring(): Promise<void> {
         screenshot = captureRes.data.screenshot
       }
     }
+    lastResumeText.value = text
     lastScreenshot.value = screenshot
 
     const candidateName = getCandidateName()

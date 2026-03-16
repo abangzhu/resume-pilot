@@ -70,6 +70,7 @@ export type MessageType =
   | 'TEST_CONNECTION'
   | 'GET_CACHED_SCORE'
   | 'CLEAR_CACHE'
+  | 'STITCH_SCREENSHOTS'
 
 export interface Message<T = unknown> {
   type: MessageType
@@ -92,4 +93,12 @@ export interface ScoreRequest {
 
 export interface CaptureRequest {
   rect: { x: number; y: number; width: number; height: number }
+}
+
+export interface StitchRequest {
+  strips: string[]
+  stripHeight: number
+  panelWidth: number
+  totalHeight: number
+  overlap: number
 }

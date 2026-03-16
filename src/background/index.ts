@@ -6,6 +6,7 @@ import type {
   ScoringTemplate,
   ScoreRequest,
   CaptureRequest,
+  StitchRequest,
   CachedScore,
 } from '@/shared/types'
 import { STORAGE_KEYS } from '@/shared/constants'
@@ -17,7 +18,7 @@ import {
   deleteTemplate,
   clearCache,
 } from './storage'
-import { captureAndCrop } from './capture'
+import { captureAndCrop, stitchScreenshots } from './capture'
 import { scoreResume, testApiConnection } from './llm'
 import { now } from '@/shared/utils'
 
@@ -70,6 +71,15 @@ onMessage(async (message: Message, sender): Promise<MessageResponse> => {
           return { success: false, error: 'No tab ID' }
         }
         const screenshot = await captureAndCrop(payload as CaptureRequest, tabId)
+        return { success: true, data: { screenshot } }
+      } catch (error) {
+        return { success: false, error: String(error) }
+      }
+    }
+
+    case 'STITCH_SCREENSHOTS': {
+      try {
+        const screenshot = await stitchScreenshots(payload as StitchRequest)
         return { success: true, data: { screenshot } }
       } catch (error) {
         return { success: false, error: String(error) }
