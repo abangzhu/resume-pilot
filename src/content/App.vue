@@ -27,6 +27,7 @@ const errorMessage = ref('')
 
 const currentCandidateId = ref('')
 const lastResumeText = ref('')
+const lastScreenshot = ref('')
 
 let observer: MutationObserver | null = null
 let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -99,6 +100,7 @@ async function startScoring(): Promise<void> {
         screenshot = captureRes.data.screenshot
       }
     }
+    lastScreenshot.value = screenshot
 
     const candidateName = getCandidateName()
 
@@ -146,6 +148,7 @@ function handleRescore(): void {
       v-else-if="state === 'scored' && scoreResult"
       :result="scoreResult"
       :resume-text="lastResumeText"
+      :resume-screenshot="lastScreenshot"
       @rescore="handleRescore"
     />
     <ErrorState
